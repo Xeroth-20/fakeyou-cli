@@ -2,8 +2,6 @@
 
 Command Line Application that uses fakeyou API
 
----------------
-
 ## ❯ Install
 
 ```bash
