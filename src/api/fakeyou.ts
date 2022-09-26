@@ -32,8 +32,10 @@ const getVoiceList = async (): Promise<GetVoiceListResponse> => {
 
 export interface VoiceCategory {
     token: string;
+    superCategoryToken: string | null;
     name: string;
     haveSuperCategory: boolean;
+    haveSubCategories: boolean;
     haveModels: boolean;
 }
 
@@ -48,7 +50,9 @@ const getCategoryList = async (): Promise<GetCategoryListResponse> => {
     const apiCategories: any[] = data.categories;
     const categories = apiCategories.map<VoiceCategory>((category) => ({
         token: category.category_token,
+        superCategoryToken: category.maybe_super_category_token,
         name: category.name,
+        haveSubCategories: category.can_have_subcategories,
         haveSuperCategory: category.maybe_super_category_token != null,
         haveModels: category.can_directly_have_models
     }));

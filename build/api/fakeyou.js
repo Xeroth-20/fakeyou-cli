@@ -34,7 +34,9 @@ const getCategoryList = () => __awaiter(void 0, void 0, void 0, function* () {
     const apiCategories = data.categories;
     const categories = apiCategories.map((category) => ({
         token: category.category_token,
+        superCategoryToken: category.maybe_super_category_token,
         name: category.name,
+        haveSubCategories: category.can_have_subcategories,
         haveSuperCategory: category.maybe_super_category_token != null,
         haveModels: category.can_directly_have_models
     }));
@@ -83,3 +85,4 @@ exports.default = {
     fetchTTSStatus,
     downloadFile
 };
+//# sourceMappingURL=fakeyou.js.map

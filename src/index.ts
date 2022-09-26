@@ -7,10 +7,11 @@ import inquirer from 'inquirer';
 import figlet from 'figlet';
 import gradient from 'gradient-string';
 import nanospinner from 'nanospinner';
-import fakeyou from './api/fakeyou';
+import fakeyou, { VoiceCategory } from './api/fakeyou';
+import preferenceHelpers from './helpers/preferenceHelpers';
+import categoryHelpers from './helpers/categoryHelpers';
+import voiceHelpers from './helpers/voiceHelpers';
 
-const pkg = require('./../package.json');
-const CLI_VERSION = pkg.version;
 const FETCH_INTERVAL = 1_000; // 1 seconds
 
 const NO_OPTION = {
@@ -19,32 +20,39 @@ const NO_OPTION = {
 };
 
 function welcome() {
-    const title = figlet.textSync('FakeYou').replace(/\s*\n\s*$/, ` ${CLI_VERSION}\n`);
+    const title = figlet.textSync('FakeYou').replace(/\s*\n\s*$/, ` ${preferenceHelpers.getVersion()}\n`);
     const description = 'Use Fake You deep fake technology to say things with your favorite characters\n';
     console.log(gradient.passion.multiline(title));
     console.log(gradient.passion.multiline(description));
 }
 
-async function askVoiceCategory(): Promise<string> {
-    const { categories } = await fakeyou.getCategoryList();
-    const filteredCategories = categories.filter((category) => !category.haveSuperCategory && category.name);
+async function askVoiceCategory(): Promise<VoiceCategory> {
+    const categories = await categoryHelpers.getCategoryList((category) => {
+        return !category.haveSuperCategory && category.name.length > 0
+    });
     const answers = await inquirer.prompt({
         type: 'list',
         name: 'voice_category',
-        message: `Select a voice category (${filteredCategories.length})`,
-        choices: filteredCategories.map((category) => ({
+        message: `Select a voice category (${categories.length})`,
+        choices: categories.map((category) => ({
             name: category.name,
-            value: category.token
+            value: category
         }))
     });
 
     return answers.voice_category;
 }
 
-async function askVoiceModel(categoryToken: string): Promise<string> {
-    const { voices } = await fakeyou.getVoiceList();
-    const filteredVoices = voices.filter((voice) => voice.categoryTokens.includes(categoryToken) && voice.name);
-    const choices = filteredVoices.map((voice) => ({
+async function askVoiceModel(category: VoiceCategory): Promise<string> {
+    // Retrieve all sub categories
+    // Cause we want all voices models that belongs to the root category or its sub categories, no matter the depth
+    const categories = await categoryHelpers.getAllSubCategories(category);
+    // Filter all categories by haveModels attribute, include root category because it can also have models
+    const filteredCategories = categories.concat([category]).filter((cat) => cat.haveModels);
+    const voices = await voiceHelpers.getVoiceListByCategories(filteredCategories, (voice) => {
+        return voice.name.length > 0;
+    });
+    const choices = voices.map((voice) => ({
         name: voice.name,
         value: voice.token
     }));
@@ -53,7 +61,7 @@ async function askVoiceModel(categoryToken: string): Promise<string> {
     const answers = await inquirer.prompt({
         type: 'list',
         name: 'voice_model',
-        message: `Select a voice model (${filteredVoices.length})`,
+        message: `Select a voice model (${voices.length})`,
         choices: choices
     });
 
@@ -128,8 +136,8 @@ async function confirmSaveFile(): Promise<boolean> {
 async function init(): Promise<void> {
     welcome();
 
-    const categoryToken = await askVoiceCategory();
-    const voiceToken = await askVoiceModel(categoryToken);
+    const category = await askVoiceCategory();
+    const voiceToken = await askVoiceModel(category);
 
     if (voiceToken === NO_OPTION.value) {
         return;

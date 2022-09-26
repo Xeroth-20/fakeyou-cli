@@ -21,40 +21,48 @@ const figlet_1 = __importDefault(require("figlet"));
 const gradient_string_1 = __importDefault(require("gradient-string"));
 const nanospinner_1 = __importDefault(require("nanospinner"));
 const fakeyou_1 = __importDefault(require("./api/fakeyou"));
-const pkg = require('./../package.json');
-const CLI_VERSION = pkg.version;
+const preferenceHelpers_1 = __importDefault(require("./helpers/preferenceHelpers"));
+const categoryHelpers_1 = __importDefault(require("./helpers/categoryHelpers"));
+const voiceHelpers_1 = __importDefault(require("./helpers/voiceHelpers"));
 const FETCH_INTERVAL = 1000; // 1 seconds
 const NO_OPTION = {
     name: '(Quit)',
     value: 'None'
 };
 function welcome() {
-    const title = figlet_1.default.textSync('FakeYou').replace(/\s*\n\s*$/, ` ${CLI_VERSION}\n`);
+    const title = figlet_1.default.textSync('FakeYou').replace(/\s*\n\s*$/, ` ${preferenceHelpers_1.default.getVersion()}\n`);
     const description = 'Use Fake You deep fake technology to say things with your favorite characters\n';
     console.log(gradient_string_1.default.passion.multiline(title));
     console.log(gradient_string_1.default.passion.multiline(description));
 }
 function askVoiceCategory() {
     return __awaiter(this, void 0, void 0, function* () {
-        const { categories } = yield fakeyou_1.default.getCategoryList();
-        const filteredCategories = categories.filter((category) => !category.haveSuperCategory && category.name);
+        const categories = yield categoryHelpers_1.default.getCategoryList((category) => {
+            return !category.haveSuperCategory && category.name.length > 0;
+        });
         const answers = yield inquirer_1.default.prompt({
             type: 'list',
             name: 'voice_category',
-            message: `Select a voice category (${filteredCategories.length})`,
-            choices: filteredCategories.map((category) => ({
+            message: `Select a voice category (${categories.length})`,
+            choices: categories.map((category) => ({
                 name: category.name,
-                value: category.token
+                value: category
             }))
         });
         return answers.voice_category;
     });
 }
-function askVoiceModel(categoryToken) {
+function askVoiceModel(category) {
     return __awaiter(this, void 0, void 0, function* () {
-        const { voices } = yield fakeyou_1.default.getVoiceList();
-        const filteredVoices = voices.filter((voice) => voice.categoryTokens.includes(categoryToken) && voice.name);
-        const choices = filteredVoices.map((voice) => ({
+        // Retrieve all sub categories
+        // Cause we want all voices models that belongs to the root category or its sub categories, no matter the depth
+        const categories = yield categoryHelpers_1.default.getAllSubCategories(category);
+        // Filter all categories by haveModels attribute, include root category because it can also have models
+        const filteredCategories = categories.concat([category]).filter((cat) => cat.haveModels);
+        const voices = yield voiceHelpers_1.default.getVoiceListByCategories(filteredCategories, (voice) => {
+            return voice.name.length > 0;
+        });
+        const choices = voices.map((voice) => ({
             name: voice.name,
             value: voice.token
         }));
@@ -62,7 +70,7 @@ function askVoiceModel(categoryToken) {
         const answers = yield inquirer_1.default.prompt({
             type: 'list',
             name: 'voice_model',
-            message: `Select a voice model (${filteredVoices.length})`,
+            message: `Select a voice model (${voices.length})`,
             choices: choices
         });
         return answers.voice_model;
@@ -127,8 +135,8 @@ function confirmSaveFile() {
 function init() {
     return __awaiter(this, void 0, void 0, function* () {
         welcome();
-        const categoryToken = yield askVoiceCategory();
-        const voiceToken = yield askVoiceModel(categoryToken);
+        const category = yield askVoiceCategory();
+        const voiceToken = yield askVoiceModel(category);
         if (voiceToken === NO_OPTION.value) {
             return;
         }
@@ -153,3 +161,4 @@ function init() {
 }
 ;
 void (init());
+//# sourceMappingURL=index.js.map

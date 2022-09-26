@@ -1,18 +1,30 @@
 {
   "name": "fakeyou-cli",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "description": "Command Line Application that uses fakeyou API",
   "main": "build/index.js",
   "scripts": {
-    "start": "node build/index.js",
-    "build": "tsc --project ./ --outDir ./build",
-    "build:run": "npm run build && npm start"
+    "start": "npm run build:prod && node build/index.js",
+    "dev": "npm run build:dev && node buildev/index.js",
+    "build:prod": "tsc --project ./ --outDir ./build",
+    "build:dev": "tsc --project ./ --outDir ./buildev"
   },
   "author": "Xeroth",
   "license": "MIT",
-  "keywords": ["cli", "command", "command-line", "voice-generator", "tts", "fakeyou", "generator", "voice", "meme"],
+  "keywords": [
+    "cli",
+    "command",
+    "command-line",
+    "voice-generator",
+    "tts",
+    "fakeyou",
+    "generator",
+    "voice",
+    "meme"
+  ],
   "dependencies": {
     "axios": "^0.27.2",
+    "configstore": "^3.1.5",
     "figlet": "^1.5.2",
     "gradient-string": "^2.0.2",
     "inquirer": "^8.2.4",
@@ -20,6 +32,7 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
+    "@types/configstore": "^4.0.0",
     "@types/figlet": "^1.5.5",
     "@types/gradient-string": "^1.1.2",
     "@types/inquirer": "^9.0.1",
